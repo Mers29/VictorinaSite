@@ -124,7 +124,7 @@
     .timer-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:13px;font-weight:800}
     .question-text{font-size:clamp(22px,2.3vw,44px);font-weight:800;line-height:1.15;margin:8px 0 0}
     .hidden-note{padding:16px;border-radius:22px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.18);color:#fde68a;font-weight:700}
-    .preview-img{width:100%;max-height:240px;object-fit:cover;border-radius:24px;border:1px solid var(--border)}
+    .preview-img{width:100%;height:auto;max-width:100%;max-height:90vh;object-fit:contain;border-radius:24px;border:1px solid var(--border)}
     .answer-box{border:1px solid var(--border);background:rgba(0,0,0,.16);border-radius:28px;padding:18px}
     .answer-box h3{margin:0 0 10px;font-size:15px;color:#bbf7d0;text-transform:uppercase;letter-spacing:.18em}
     .answer-text{font-size:18px;font-weight:700;line-height:1.45}
@@ -320,25 +320,14 @@
       function getImageSrc(value){
         if (!value) return '';
         const input = String(value).trim();
-
-        if (input.startsWith('/photo/') || input.startsWith('photo/')) {
-          return input.startsWith('/') ? input : `/${input}`;
-        }
-
+        if (input.startsWith('/photo/') || input.startsWith('photo/')) return input.startsWith('/') ? input : `/${input}`;
         const githubBlob = input.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/i);
         if (githubBlob) {
           const [, owner, repo, branch, path] = githubBlob;
           return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
         }
-
-        if (input.includes('raw.githubusercontent.com')) {
-          return input;
-        }
-
-        if (!input.includes('://')) {
-          return `/photo/${input.replace(/^\/+/, '')}`;
-        }
-
+        if (input.includes('raw.githubusercontent.com')) return input;
+        if (!input.includes('://')) return `/photo/${input.replace(/^\/+/, '')}`;
         return input;
       }
 
@@ -382,26 +371,15 @@
       let state = loadState();
       let timer = null;
 
-      function save(){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      }
-      function renderAll(){
-        save();
-        renderHeader();
-        renderTeams();
-        renderEditor();
-        renderGameGrid();
-        renderModeVisibility();
-      }
+      function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      function renderAll(){ save(); renderHeader(); renderTeams(); renderEditor(); renderGameGrid(); renderModeVisibility(); }
       function renderHeader(){
         const currentTeam = state.teams[state.currentTurn % state.teams.length];
         $('turnBadge').textContent = `Ход: ${currentTeam ? currentTeam.name : '—'}`;
         $('teamCountRange').value = state.teams.length;
         $('teamCountLabel').textContent = state.teams.length;
       }
-      function renderModeVisibility(){
-        $('editorPanel').style.display = state.mode === 'editor' ? 'block' : 'none';
-      }
+      function renderModeVisibility(){ $('editorPanel').style.display = state.mode === 'editor' ? 'block' : 'none'; }
       function renderTeams(){
         const wrap = $('teamsGrid');
         wrap.innerHTML = '';
@@ -482,14 +460,12 @@
         const qCount = Math.max(1, state.categories[0]?.questions.length || POINTS.length);
         grid.style.gridTemplateColumns = `repeat(${cols}, minmax(180px, 1fr))`;
         grid.innerHTML = '';
-
         state.categories.forEach((cat) => {
           const d = document.createElement('div');
           d.className = 'cell cat';
           d.textContent = cat.name || 'Категория';
           grid.appendChild(d);
         });
-
         for(let qi=0; qi<qCount; qi++){
           state.categories.forEach((cat, ci) => {
             const q = cat.questions[qi] || newQuestion();
@@ -542,6 +518,18 @@
         $('imageArea').innerHTML = q.image ? `<img class="preview-img" src="${escapeAttr(getImageSrc(q.image))}" alt="question">` : '';
         $('answerText').textContent = q.answer || 'Добавьте ответ в редакторе.';
         $('answerArea').style.display = state.showAnswer ? 'block' : 'none';
+
+        const img = $('imageArea').querySelector('img');
+        if (img) {
+          img.onload = () => {
+            const modal = document.querySelector('.modal');
+            if (!modal) return;
+            const box = modal.querySelector('.question-box');
+            if (box) {
+              box.style.minHeight = 'auto';
+            }
+          };
+        }
       }
 
       function closeModal(){
@@ -580,31 +568,11 @@
         renderAll();
       }
 
-      function addCategory(){
-        state.categories.push(newCategory(state.categories.length));
-        renderAll();
-      }
-      function addColumn(){
-        state.categories.forEach(cat => cat.questions.push(newQuestion()));
-        renderAll();
-      }
-      function removeColumn(){
-        if((state.categories[0]?.questions.length || 0) <= 1) return alert('Нужен хотя бы один столбец.');
-        state.categories.forEach(cat => cat.questions.pop());
-        renderAll();
-      }
-      function newGame(){
-        state.mode = 'game';
-        state.currentTurn = 0;
-        state.teams.forEach(t => t.score = 0);
-        state.categories.forEach(cat => cat.questions.forEach(q => { q.resolved=false; q.result=null; q.teamName=''; q.pointsAwarded=0; }));
-        renderAll();
-      }
-      function resetAll(){
-        if(!confirm('Сбросить всю доску и команды?')) return;
-        state = defaultState();
-        renderAll();
-      }
+      function addCategory(){ state.categories.push(newCategory(state.categories.length)); renderAll(); }
+      function addColumn(){ state.categories.forEach(cat => cat.questions.push(newQuestion())); renderAll(); }
+      function removeColumn(){ if((state.categories[0]?.questions.length || 0) <= 1) return alert('Нужен хотя бы один столбец.'); state.categories.forEach(cat => cat.questions.pop()); renderAll(); }
+      function newGame(){ state.mode = 'game'; state.currentTurn = 0; state.teams.forEach(t => t.score = 0); state.categories.forEach(cat => cat.questions.forEach(q => { q.resolved=false; q.result=null; q.teamName=''; q.pointsAwarded=0; })); renderAll(); }
+      function resetAll(){ if(!confirm('Сбросить всю доску и команды?')) return; state = defaultState(); renderAll(); }
 
       function importJsonFile(file){
         const reader = new FileReader();
