@@ -314,9 +314,33 @@
       const DEFAULT_CATS = 5;
       const DEFAULT_TEAMS = 2;
       const $ = (id) => document.getElementById(id);
-      const deepClone = (v) => JSON.parse(JSON.stringify(v));
       const uid = () => Math.random().toString(36).slice(2,10);
       const clamp = (n,min,max) => Math.max(min, Math.min(max, n));
+
+      function getImageSrc(value){
+        if (!value) return '';
+        const input = String(value).trim();
+
+        if (input.startsWith('/photo/') || input.startsWith('photo/')) {
+          return input.startsWith('/') ? input : `/${input}`;
+        }
+
+        const githubBlob = input.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/blob\/([^/]+)\/(.+)$/i);
+        if (githubBlob) {
+          const [, owner, repo, branch, path] = githubBlob;
+          return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${path}`;
+        }
+
+        if (input.includes('raw.githubusercontent.com')) {
+          return input;
+        }
+
+        if (!input.includes('://')) {
+          return `/photo/${input.replace(/^\/+/, '')}`;
+        }
+
+        return input;
+      }
 
       function newQuestion(){
         return { id: uid(), question:'', answer:'', image:'', resolved:false, result:null, teamName:'', pointsAwarded:0 };
@@ -423,8 +447,8 @@
               <label style="font-size:12px;color:var(--muted);margin-top:8px;display:block">Ответ</label>
               <textarea data-field="answer">${escapeHtml(q.answer)}</textarea>
               <label style="font-size:12px;color:var(--muted);margin-top:8px;display:block">Картинка (ссылка)</label>
-              <input type="text" data-field="image" value="${escapeHtml(q.image)}" placeholder="https://..." />
-              ${q.image ? `<div class="img-preview"><img src="${escapeAttr(q.image)}" alt="preview"></div>` : ''}
+              <input type="text" data-field="image" value="${escapeHtml(q.image)}" placeholder="https://github.com/.../blob/... или /photo/file.jpg" />
+              ${q.image ? `<div class="img-preview"><img src="${escapeAttr(getImageSrc(q.image))}" alt="preview"></div>` : ''}
             </div>
           `).join('');
           box.innerHTML = `
@@ -448,8 +472,6 @@
             areas[0].addEventListener('input', e => { q.question = e.target.value; save(); });
             areas[1].addEventListener('input', e => { q.answer = e.target.value; save(); });
             imageInput.addEventListener('input', e => { q.image = e.target.value; renderAll(); });
-            // file drop/paste support via context note impossible in simple HTML without extra picker
-            qcard.insertAdjacentHTML('beforeend', `<div style="margin-top:8px;color:var(--muted);font-size:12px">Можно вставить прямую ссылку на картинку или dataURL.</div>`);
           });
           container.appendChild(box);
         });
@@ -461,7 +483,6 @@
         grid.style.gridTemplateColumns = `repeat(${cols}, minmax(180px, 1fr))`;
         grid.innerHTML = '';
 
-        // category row
         state.categories.forEach((cat) => {
           const d = document.createElement('div');
           d.className = 'cell cat';
@@ -469,7 +490,6 @@
           grid.appendChild(d);
         });
 
-        // questions by rows
         for(let qi=0; qi<qCount; qi++){
           state.categories.forEach((cat, ci) => {
             const q = cat.questions[qi] || newQuestion();
@@ -519,7 +539,7 @@
         $('questionArea').innerHTML = state.remaining > 0
           ? `<div class="question-text">${escapeHtml(q.question || 'Добавьте текст вопроса в редакторе.')}</div>`
           : `<div class="hidden-note">Время вышло. Текст вопроса скрыт.</div>`;
-        $('imageArea').innerHTML = q.image ? `<img class="preview-img" src="${escapeAttr(q.image)}" alt="question">` : '';
+        $('imageArea').innerHTML = q.image ? `<img class="preview-img" src="${escapeAttr(getImageSrc(q.image))}" alt="question">` : '';
         $('answerText').textContent = q.answer || 'Добавьте ответ в редакторе.';
         $('answerArea').style.display = state.showAnswer ? 'block' : 'none';
       }
@@ -616,7 +636,6 @@
       }
       function escapeAttr(str){ return escapeHtml(str).replace(/`/g,'&#96;'); }
 
-      // Events
       $('modeEditor').onclick = () => { state.mode = 'editor'; renderAll(); };
       $('modeGame').onclick = () => { state.mode = 'game'; renderAll(); };
       $('newGameBtn').onclick = newGame;
@@ -635,7 +654,6 @@
       $('correctBtn').onclick = () => finishQuestion(true);
       $('wrongBtn').onclick = () => finishQuestion(false);
 
-      // Keyboard shortcuts
       document.addEventListener('keydown', (e) => {
         if(e.key === 'Escape' && state.modalOpen) closeModal();
         if(state.modalOpen && e.key === 'Enter') {
@@ -643,7 +661,6 @@
         }
       });
 
-      // initial render
       renderAll();
     })();
   </script>
