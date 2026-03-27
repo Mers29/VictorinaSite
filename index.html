@@ -1,878 +1,651 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  FlaskConical,
-  Leaf,
-  Microscope,
-  Plus,
-  Save,
-  X,
-  Play,
-  RotateCcw,
-  Trophy,
-  TimerReset,
-  ImagePlus,
-  Edit3,
-  ChevronLeft,
-  ChevronRight,
-  Users,
-  CircleDot,
-  CheckCircle2,
-  XCircle,
-  Sparkles,
-} from 'lucide-react';
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Биологическая Викторина</title>
+  <meta name="theme-color" content="#064e3b" />
+  <style>
+    :root{
+      --bg1:#022c22;
+      --bg2:#052e16;
+      --bg3:#0f172a;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(0,0,0,.18);
+      --border: rgba(255,255,255,.10);
+      --text:#ecfdf5;
+      --muted: rgba(236,253,245,.70);
+      --emerald:#34d399;
+      --emerald2:#10b981;
+      --lime:#a3e635;
+      --rose:#fb7185;
+      --amber:#fbbf24;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+      --radius: 24px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(52,211,153,.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(163,230,53,.13), transparent 26%),
+        linear-gradient(135deg, var(--bg1), var(--bg2) 45%, var(--bg3));
+      color:var(--text);
+      overflow-x:hidden;
+    }
+    .wrap{max-width:1440px;margin:0 auto;padding:20px 16px 28px}
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;gap:16px;
+      flex-wrap:wrap;padding:18px 20px;border:1px solid var(--border);
+      background:rgba(0,0,0,.22);backdrop-filter: blur(14px);border-radius:28px;box-shadow:var(--shadow)
+    }
+    .brand{display:flex;align-items:center;gap:14px;min-width:260px}
+    .logo{
+      width:54px;height:54px;border-radius:18px;display:grid;place-items:center;
+      background:linear-gradient(135deg, rgba(52,211,153,.22), rgba(16,185,129,.06));
+      border:1px solid rgba(52,211,153,.25); box-shadow:0 10px 30px rgba(16,185,129,.16)
+    }
+    .title{font-size:clamp(22px,2.2vw,34px);font-weight:800;line-height:1.08;margin:0}
+    .subtitle{margin:5px 0 0;color:var(--muted);font-size:13px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
+    .btn,.chip,input,textarea,select{
+      border-radius:18px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.06);
+      color:var(--text);outline:none;transition:.2s ease;font:inherit
+    }
+    .btn{padding:12px 16px;font-weight:700;cursor:pointer}
+    .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.10)}
+    .btn.primary{background:linear-gradient(135deg,#34d399,#a3e635);color:#064e3b;border:none}
+    .btn.primary:hover{filter:brightness(1.05)}
+    .btn.danger{background:rgba(244,63,94,.15);border-color:rgba(244,63,94,.18)}
+    .btn.ghost{background:rgba(255,255,255,.04)}
+    .btn.small{padding:9px 12px;border-radius:14px;font-size:13px}
+    .layout{display:grid;grid-template-columns:1fr 345px;gap:18px;margin-top:18px}
+    .panel{
+      border:1px solid var(--border);background:var(--card);backdrop-filter:blur(12px);
+      border-radius:28px;box-shadow:var(--shadow)
+    }
+    .panel.pad{padding:18px}
+    .section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .section-title h2{margin:0;font-size:18px}
+    .section-title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .teams-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+    .team-card{
+      border:1px solid var(--border);background:rgba(0,0,0,.18);border-radius:22px;padding:14px;
+      transition:.2s ease
+    }
+    .team-card.active{border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.10)}
+    .team-head{display:flex;gap:10px;align-items:center;justify-content:space-between}
+    .team-name{width:100%;padding:10px 12px;font-weight:700}
+    .score{min-width:74px;text-align:center;padding:10px 12px;font-weight:800;color:#bbf7d0;background:rgba(52,211,153,.14)}
+    .score-controls{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+    .score-controls .btn{padding:9px 0;font-size:12px;border-radius:14px}
+    .range-row{display:flex;align-items:center;gap:12px;margin-top:12px;padding:12px 14px;background:rgba(0,0,0,.14);border:1px solid var(--border);border-radius:20px}
+    .range-row input[type=range]{flex:1;accent-color:#34d399}
+    .badge{padding:8px 12px;border-radius:999px;background:rgba(52,211,153,.14);border:1px solid rgba(52,211,153,.18);color:#d1fae5;font-weight:700;font-size:13px}
+    .toolbar{display:flex;gap:10px;flex-wrap:wrap}
+    .editor-cat{margin-top:14px;padding:14px;border:1px solid var(--border);background:rgba(0,0,0,.16);border-radius:24px}
+    .editor-cat-top{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+    .editor-cat input.cat-name{flex:1;min-width:220px;padding:12px 14px;font-size:16px;font-weight:800}
+    .grid-wrap{overflow:auto;border-radius:30px;border:1px solid var(--border);background:rgba(0,0,0,.22)}
+    .game-grid{display:grid;gap:1px;background:rgba(255,255,255,.06);min-width:900px}
+    .cell.cat{
+      background:rgba(6,78,59,.88);padding:14px 12px;text-align:center;font-weight:800;color:#ecfdf5;min-height:70px;display:flex;align-items:center;justify-content:center
+    }
+    .cell.q{
+      min-height:104px;border:none;cursor:pointer;padding:0;background:linear-gradient(135deg,#14532d,#052e16);color:#f0fdf4;transition:.18s ease
+    }
+    .cell.q:hover{filter:brightness(1.08);transform:translateY(-1px)}
+    .cell.q:disabled{cursor:default;opacity:.97}
+    .cell-inner{display:flex;height:100%;min-height:104px;align-items:center;justify-content:center;flex-direction:column;gap:4px;border-radius:0;padding:14px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.14)}
+    .cell-value{font-size:clamp(20px,2vw,28px);font-weight:900}
+    .cell-sub{font-size:12px;opacity:.9}
+    .cell.done.correct{background:linear-gradient(135deg, rgba(34,197,94,.82), rgba(16,185,129,.84));color:#052e16}
+    .cell.done.wrong{background:linear-gradient(135deg, rgba(244,63,94,.82), rgba(225,29,72,.84));color:#fff1f2}
+    .side{display:flex;flex-direction:column;gap:18px}
+    .info-list{display:grid;gap:10px;color:var(--muted);font-size:14px;line-height:1.5}
+    .info-list p{margin:0}
 
-const POINTS = [100, 200, 300, 400, 500];
-const STORAGE_KEY = 'biology-jeopardy-v1';
-const DEFAULT_CATEGORY_COUNT = 5;
-const DEFAULT_TEAM_COUNT = 2;
+    /* Modal */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.84);backdrop-filter: blur(10px);display:none;align-items:center;justify-content:center;padding:14px;z-index:99}
+    .modal-backdrop.open{display:flex;animation:fadeIn .18s ease}
+    .modal{
+      width:min(1180px,100%);max-height:92vh;overflow:hidden;border-radius:32px;border:1px solid var(--border);
+      background:linear-gradient(135deg, rgba(4,47,46,.98), rgba(6,78,59,.94) 48%, rgba(15,23,42,.98));
+      box-shadow:var(--shadow);display:grid;grid-template-rows:auto 1fr
+    }
+    .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border)}
+    .modal-title{font-weight:900}
+    .modal-title small{display:block;color:var(--muted);font-weight:600;margin-top:4px}
+    .modal-body{display:grid;grid-template-columns:1.25fr .85fr;min-height:0}
+    .modal-left,.modal-right{padding:18px;min-height:0;overflow:auto}
+    .question-box{border:1px solid var(--border);background:rgba(0,0,0,.18);border-radius:28px;padding:18px;min-height:360px;display:flex;flex-direction:column;justify-content:space-between;gap:14px}
+    .timer-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);font-size:13px;font-weight:800}
+    .question-text{font-size:clamp(22px,2.3vw,44px);font-weight:800;line-height:1.15;margin:8px 0 0}
+    .hidden-note{padding:16px;border-radius:22px;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.18);color:#fde68a;font-weight:700}
+    .preview-img{width:100%;max-height:240px;object-fit:cover;border-radius:24px;border:1px solid var(--border)}
+    .answer-box{border:1px solid var(--border);background:rgba(0,0,0,.16);border-radius:28px;padding:18px}
+    .answer-box h3{margin:0 0 10px;font-size:15px;color:#bbf7d0;text-transform:uppercase;letter-spacing:.18em}
+    .answer-text{font-size:18px;font-weight:700;line-height:1.45}
+    .answer-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+    textarea,input[type=text],select{
+      width:100%;padding:12px 14px;resize:vertical;min-height:46px
+    }
+    textarea{min-height:82px;line-height:1.45}
+    .editor-question{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}
+    .qcard{border:1px solid var(--border);background:rgba(255,255,255,.05);border-radius:22px;padding:12px}
+    .qcard .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+    .pill{padding:6px 10px;border-radius:999px;background:rgba(52,211,153,.15);color:#d1fae5;font-size:12px;font-weight:800}
+    .img-preview{margin-top:10px;border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.10)}
+    .img-preview img{display:block;width:100%;height:120px;object-fit:cover}
+    .foot{margin-top:14px;color:rgba(236,253,245,.45);font-size:12px;text-align:center}
 
-const makeId = () => Math.random().toString(36).slice(2, 10);
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @media (max-width: 1100px){
+      .layout{grid-template-columns:1fr}
+      .modal-body{grid-template-columns:1fr}
+    }
+    @media (max-width: 700px){
+      .wrap{padding:12px}
+      .topbar{padding:14px}
+      .brand{min-width:0}
+      .title{font-size:22px}
+      .modal{border-radius:24px}
+      .modal-left,.modal-right{padding:14px}
+      .question-box{min-height:280px}
+      .editor-question{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar panel">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <span style="font-size:28px">🌿</span>
+        </div>
+        <div>
+          <h1 class="title">Биологическая Викторина</h1>
+          <div class="subtitle">Jeopardy-стиль · редактор · игра · localStorage</div>
+        </div>
+      </div>
 
-function createEmptyQuestion() {
-  return {
-    id: makeId(),
-    question: '',
-    answer: '',
-    image: '',
-    resolved: false,
-    result: null, // 'correct' | 'wrong'
-    teamId: null,
-    teamName: '',
-    pointsAwarded: 0,
-  };
-}
+      <div class="actions">
+        <button class="btn ghost" id="modeEditor">Режим редактора</button>
+        <button class="btn ghost" id="modeGame">Режим игры</button>
+        <button class="btn primary" id="newGameBtn">Новый матч</button>
+        <button class="btn danger" id="resetBtn">Сбросить</button>
+      </div>
+    </header>
 
-function createCategory(index) {
-  return {
-    id: makeId(),
-    name: `Категория ${index + 1}`,
-    questions: POINTS.map(() => createEmptyQuestion()),
-  };
-}
-
-function createDefaultState() {
-  return {
-    mode: 'editor',
-    gameStarted: false,
-    currentTurn: 0,
-    teams: Array.from({ length: DEFAULT_TEAM_COUNT }, (_, i) => ({
-      id: makeId(),
-      name: `Команда ${i + 1}`,
-      score: 0,
-      color: i % 2 === 0 ? 'emerald' : 'green',
-    })),
-    categories: Array.from({ length: DEFAULT_CATEGORY_COUNT }, (_, i) => createCategory(i)),
-    selectedCell: null, // { catIndex, qIndex }
-    modalOpen: false,
-    timerKey: 0,
-    timerRunning: false,
-    remaining: 30,
-    showAnswer: false,
-    currentQuestionSnapshot: null,
-  };
-}
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createDefaultState();
-    const parsed = JSON.parse(raw);
-    const base = createDefaultState();
-    return {
-      ...base,
-      ...parsed,
-      teams: Array.isArray(parsed.teams) && parsed.teams.length ? parsed.teams : base.teams,
-      categories: Array.isArray(parsed.categories) && parsed.categories.length ? parsed.categories : base.categories,
-      mode: parsed.mode === 'game' ? 'game' : 'editor',
-    };
-  } catch {
-    return createDefaultState();
-  }
-}
-
-function clampTeamsCount(n) {
-  return Math.min(10, Math.max(2, Number(n) || 2));
-}
-
-export default function App() {
-  const [state, setState] = useState(loadState);
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
-
-  useEffect(() => {
-    if (!state.modalOpen || !state.timerRunning) return;
-    timerRef.current = setInterval(() => {
-      setState((prev) => {
-        if (!prev.timerRunning) return prev;
-        if (prev.remaining <= 1) {
-          return {
-            ...prev,
-            remaining: 0,
-            timerRunning: false,
-            showAnswer: false,
-          };
-        }
-        return { ...prev, remaining: prev.remaining - 1 };
-      });
-    }, 1000);
-
-    return () => clearInterval(timerRef.current);
-  }, [state.modalOpen, state.timerRunning, state.timerKey]);
-
-  useEffect(() => {
-    return () => clearInterval(timerRef.current);
-  }, []);
-
-  const currentTeam = useMemo(() => state.teams[state.currentTurn % state.teams.length], [state.teams, state.currentTurn]);
-  const openedCell = state.selectedCell ? state.categories[state.selectedCell.catIndex]?.questions[state.selectedCell.qIndex] : null;
-
-  const updateCategory = (catIndex, updater) => {
-    setState((prev) => {
-      const categories = prev.categories.map((cat, idx) => {
-        if (idx !== catIndex) return cat;
-        return typeof updater === 'function' ? updater(cat) : updater;
-      });
-      return { ...prev, categories };
-    });
-  };
-
-  const updateQuestion = (catIndex, qIndex, field, value) => {
-    setState((prev) => {
-      const categories = prev.categories.map((cat, idx) => {
-        if (idx !== catIndex) return cat;
-        return {
-          ...cat,
-          questions: cat.questions.map((q, qi) => (qi === qIndex ? { ...q, [field]: value } : q)),
-        };
-      });
-      return { ...prev, categories };
-    });
-  };
-
-  const resetBoard = () => {
-    setState((prev) => ({
-      ...createDefaultState(),
-      mode: prev.mode,
-      teams: prev.teams.map((t, i) => ({ ...t, score: 0, name: t.name || `Команда ${i + 1}` })),
-      categories: Array.from({ length: prev.categories.length || DEFAULT_CATEGORY_COUNT }, (_, i) => {
-        const old = prev.categories[i];
-        if (old) {
-          return {
-            ...old,
-            questions: POINTS.map((_, qi) => old.questions?.[qi] || createEmptyQuestion()),
-          };
-        }
-        return createCategory(i);
-      }),
-    }));
-  };
-
-  const newGame = () => {
-    setState((prev) => ({
-      ...createDefaultState(),
-      mode: 'game',
-      teams: prev.teams.map((t, i) => ({ ...t, score: 0, name: t.name || `Команда ${i + 1}` })),
-      categories: prev.categories.length ? prev.categories : Array.from({ length: DEFAULT_CATEGORY_COUNT }, (_, i) => createCategory(i)),
-    }));
-  };
-
-  const openCell = (catIndex, qIndex) => {
-    const q = state.categories[catIndex].questions[qIndex];
-    if (q.resolved) return;
-    setState((prev) => ({
-      ...prev,
-      selectedCell: { catIndex, qIndex },
-      modalOpen: true,
-      showAnswer: false,
-      remaining: 30,
-      timerRunning: true,
-      timerKey: prev.timerKey + 1,
-      currentQuestionSnapshot: {
-        categoryName: prev.categories[catIndex].name,
-        ...prev.categories[catIndex].questions[qIndex],
-        points: POINTS[qIndex],
-      },
-    }));
-  };
-
-  const closeModal = () => {
-    clearInterval(timerRef.current);
-    setState((prev) => ({
-      ...prev,
-      modalOpen: false,
-      selectedCell: null,
-      timerRunning: false,
-      showAnswer: false,
-      currentQuestionSnapshot: null,
-      remaining: 30,
-    }));
-  };
-
-  const finishQuestion = (correct) => {
-    if (!state.selectedCell) return;
-    const { catIndex, qIndex } = state.selectedCell;
-    const q = state.categories[catIndex].questions[qIndex];
-    const team = state.teams[state.currentTurn % state.teams.length];
-    const points = POINTS[qIndex];
-    const pointsAwarded = correct ? points : 0;
-    const result = correct ? 'correct' : 'wrong';
-
-    setState((prev) => {
-      const nextTurn = (prev.currentTurn + 1) % prev.teams.length;
-      const categories = prev.categories.map((cat, idx) => {
-        if (idx !== catIndex) return cat;
-        return {
-          ...cat,
-          questions: cat.questions.map((item, qi) =>
-            qi === qIndex
-              ? {
-                  ...item,
-                  resolved: true,
-                  result,
-                  teamId: team.id,
-                  teamName: team.name,
-                  pointsAwarded,
-                }
-              : item
-          ),
-        };
-      });
-      const teams = prev.teams.map((t) =>
-        t.id === team.id ? { ...t, score: t.score + pointsAwarded } : t
-      );
-      return {
-        ...prev,
-        teams,
-        categories,
-        currentTurn: nextTurn,
-        modalOpen: false,
-        selectedCell: null,
-        timerRunning: false,
-        showAnswer: false,
-        currentQuestionSnapshot: null,
-        remaining: 30,
-      };
-    });
-  };
-
-  const setTeamCount = (count) => {
-    const n = clampTeamsCount(count);
-    setState((prev) => {
-      const nextTeams = [...prev.teams];
-      if (nextTeams.length < n) {
-        for (let i = nextTeams.length; i < n; i += 1) {
-          nextTeams.push({ id: makeId(), name: `Команда ${i + 1}`, score: 0, color: i % 2 === 0 ? 'emerald' : 'green' });
-        }
-      } else if (nextTeams.length > n) {
-        nextTeams.length = n;
-      }
-      return { ...prev, teams: nextTeams, currentTurn: prev.currentTurn % n };
-    });
-  };
-
-  const addCategory = () => {
-    setState((prev) => ({
-      ...prev,
-      categories: [...prev.categories, createCategory(prev.categories.length)],
-    }));
-  };
-
-  const removeCategory = (idx) => {
-    setState((prev) => ({
-      ...prev,
-      categories: prev.categories.filter((_, i) => i !== idx),
-      selectedCell:
-        prev.selectedCell?.catIndex === idx
-          ? null
-          : prev.selectedCell && prev.selectedCell.catIndex > idx
-          ? { ...prev.selectedCell, catIndex: prev.selectedCell.catIndex - 1 }
-          : prev.selectedCell,
-    }));
-  };
-
-  const addQuestionColumn = () => {
-    setState((prev) => ({
-      ...prev,
-      categories: prev.categories.map((cat) => ({
-        ...cat,
-        questions: [...cat.questions, createEmptyQuestion()],
-      })),
-    }));
-  };
-
-  const removeQuestionColumn = () => {
-    setState((prev) => ({
-      ...prev,
-      categories: prev.categories.map((cat) => ({
-        ...cat,
-        questions: cat.questions.slice(0, -1),
-      })),
-    }));
-  };
-
-  const qCount = state.categories[0]?.questions.length || POINTS.length;
-  const questionValues = useMemo(
-    () => Array.from({ length: qCount }, (_, i) => POINTS[i] || (i + 1) * 100),
-    [qCount]
-  );
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-950 via-green-950 to-slate-950 text-green-50 overflow-hidden">
-      <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.22),transparent_35%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.18),transparent_30%),radial-gradient(circle_at_bottom,rgba(6,95,70,0.25),transparent_35%)]" />
-
-      <header className="relative z-10 border-b border-white/10 bg-black/20 backdrop-blur-xl">
-        <div className="mx-auto max-w-7xl px-4 py-4 md:px-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/20 ring-1 ring-emerald-400/30 shadow-lg shadow-emerald-950/30">
-              <Leaf className="h-6 w-6 text-emerald-300" />
-            </div>
+    <div class="layout">
+      <section class="main-col">
+        <div class="panel pad">
+          <div class="section-title">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Биологическая Викторина</h1>
-              <p className="text-sm text-green-100/70">Jeopardy-стиль, редактор, игра и сохранение в браузере</p>
+              <h2>Команды</h2>
+              <p>Можно вручную менять счёт в любой момент.</p>
             </div>
+            <div class="badge" id="turnBadge">Ход: —</div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setState((p) => ({ ...p, mode: 'editor' }))}
-              className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                state.mode === 'editor'
-                  ? 'bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-500/20'
-                  : 'bg-white/5 text-green-50 hover:bg-white/10'
-              }`}
-            >
-              Режим редактора
-            </button>
-            <button
-              onClick={() => setState((p) => ({ ...p, mode: 'game' }))}
-              className={`rounded-2xl px-4 py-2 text-sm font-medium transition ${
-                state.mode === 'game'
-                  ? 'bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-500/20'
-                  : 'bg-white/5 text-green-50 hover:bg-white/10'
-              }`}
-            >
-              Режим игры
-            </button>
-            <button
-              onClick={newGame}
-              className="inline-flex items-center gap-2 rounded-2xl bg-lime-400 px-4 py-2 text-sm font-semibold text-emerald-950 hover:bg-lime-300 transition"
-            >
-              <Play className="h-4 w-4" />
-              Новый матч
-            </button>
-            <button
-              onClick={resetBoard}
-              className="inline-flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 text-sm font-medium hover:bg-white/10 transition"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Сбросить
-            </button>
+          <div class="teams-grid" id="teamsGrid"></div>
+          <div class="range-row">
+            <span style="font-size:14px;color:var(--muted)">Команд:</span>
+            <input id="teamCountRange" type="range" min="2" max="10" value="2" />
+            <span class="badge" id="teamCountLabel">2</span>
           </div>
         </div>
-      </header>
 
-      <main className="relative z-10 mx-auto max-w-7xl px-4 py-5 md:px-6 lg:py-6">
-        <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
-          <section className="space-y-5">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm text-green-100/80">
-                  <Sparkles className="h-4 w-4 text-emerald-300" />
-                  {state.gameStarted || state.mode === 'game' ? 'Игра активна' : 'Пока в редакторе'}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-green-100/80">
-                  <Users className="h-4 w-4" />
-                  Ход: <span className="font-semibold text-white">{currentTeam?.name || '—'}</span>
-                </div>
-              </div>
-
-              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {state.teams.map((team, idx) => (
-                  <motion.div
-                    key={team.id}
-                    layout
-                    className={`rounded-2xl border p-4 shadow-lg ${
-                      idx === state.currentTurn % state.teams.length
-                        ? 'border-emerald-300/50 bg-emerald-400/15'
-                        : 'border-white/10 bg-black/15'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <input
-                        value={team.name}
-                        onChange={(e) => {
-                          const name = e.target.value;
-                          setState((prev) => ({
-                            ...prev,
-                            teams: prev.teams.map((t) => (t.id === team.id ? { ...t, name } : t)),
-                          }));
-                        }}
-                        className="w-full rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm font-semibold text-white outline-none placeholder:text-green-100/40 focus:border-emerald-300/50"
-                        placeholder={`Команда ${idx + 1}`}
-                      />
-                      <div className="rounded-xl bg-emerald-400/15 px-3 py-2 text-sm font-bold text-emerald-200">
-                        {team.score}
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          setState((prev) => ({
-                            ...prev,
-                            teams: prev.teams.map((t) =>
-                              t.id === team.id ? { ...t, score: t.score - 100 } : t
-                            ),
-                          }))
-                        }
-                        className="rounded-xl bg-white/5 px-3 py-2 text-xs hover:bg-white/10 transition"
-                      >
-                        -100
-                      </button>
-                      <button
-                        onClick={() =>
-                          setState((prev) => ({
-                            ...prev,
-                            teams: prev.teams.map((t) =>
-                              t.id === team.id ? { ...t, score: t.score + 100 } : t
-                            ),
-                          }))
-                        }
-                        className="rounded-xl bg-emerald-400/20 px-3 py-2 text-xs text-emerald-100 hover:bg-emerald-400/30 transition"
-                      >
-                        +100
-                      </button>
-                      <button
-                        onClick={() =>
-                          setState((prev) => ({
-                            ...prev,
-                            currentTurn: idx,
-                          }))
-                        }
-                        className="ml-auto rounded-xl bg-white/5 px-3 py-2 text-xs hover:bg-white/10 transition"
-                      >
-                        Сейчас ход
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-white/10 bg-black/10 p-3">
-                <div className="flex items-center gap-2 text-sm text-green-100/80">
-                  <CircleDot className="h-4 w-4 text-emerald-300" />
-                  Команд: {state.teams.length}
-                </div>
-                <input
-                  type="range"
-                  min="2"
-                  max="10"
-                  value={state.teams.length}
-                  onChange={(e) => setTeamCount(Number(e.target.value))}
-                  className="h-2 flex-1 accent-emerald-400"
-                />
-                <div className="rounded-xl bg-white/5 px-3 py-2 text-sm text-green-50">
-                  {state.teams.length}
-                </div>
-              </div>
+        <div class="panel pad" id="editorPanel">
+          <div class="section-title">
+            <div>
+              <h2>Редактор доски</h2>
+              <p>Заполни категории, вопросы, ответы и картинки.</p>
             </div>
-
-            {state.mode === 'editor' && (
-              <div className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold">Редактор доски</h2>
-                    <p className="text-sm text-green-100/70">Категории, вопросы, изображения и правильные ответы.</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={addCategory} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-emerald-950 hover:bg-emerald-300 transition">
-                      <Plus className="h-4 w-4" /> Категория
-                    </button>
-                    <button onClick={addQuestionColumn} className="inline-flex items-center gap-2 rounded-2xl bg-white/5 px-4 py-2 text-sm hover:bg-white/10 transition">
-                      <Plus className="h-4 w-4" /> Столбец
-                    </button>
-                    <button onClick={removeQuestionColumn} className="rounded-2xl bg-white/5 px-4 py-2 text-sm hover:bg-white/10 transition">- Столбец</button>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-4">
-                  {state.categories.map((cat, catIndex) => (
-                    <div key={cat.id} className="rounded-3xl border border-white/10 bg-black/15 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center gap-2 flex-1 min-w-[220px]">
-                          <input
-                            value={cat.name}
-                            onChange={(e) =>
-                              setState((prev) => ({
-                                ...prev,
-                                categories: prev.categories.map((c, i) => (i === catIndex ? { ...c, name: e.target.value } : c)),
-                              }))
-                            }
-                            className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-base font-semibold text-white outline-none focus:border-emerald-300/50"
-                            placeholder="Название категории"
-                          />
-                          <button onClick={() => removeCategory(catIndex)} className="rounded-2xl bg-rose-500/15 p-3 text-rose-200 hover:bg-rose-500/25 transition" title="Удалить категорию">
-                            <X className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-green-100/60">
-                          <Microscope className="h-4 w-4" />
-                          {cat.questions.length} ячеек
-                        </div>
-                      </div>
-
-                      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-                        {cat.questions.map((q, qIndex) => (
-                          <div key={q.id} className="rounded-2xl border border-white/10 bg-white/5 p-3">
-                            <div className="mb-2 flex items-center justify-between gap-2">
-                              <span className="rounded-full bg-emerald-400/20 px-3 py-1 text-xs font-semibold text-emerald-100">
-                                {qIndex < questionValues.length ? questionValues[qIndex] : (qIndex + 1) * 100} баллов
-                              </span>
-                              <span className="text-xs text-green-100/60">ID: {q.id}</span>
-                            </div>
-                            <label className="mb-2 block text-xs text-green-100/70">Вопрос</label>
-                            <textarea
-                              value={q.question}
-                              onChange={(e) => updateQuestion(catIndex, qIndex, 'question', e.target.value)}
-                              className="min-h-[88px] w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-emerald-300/50"
-                              placeholder="Введите текст вопроса"
-                            />
-                            <label className="mt-3 mb-2 block text-xs text-green-100/70">Ответ</label>
-                            <textarea
-                              value={q.answer}
-                              onChange={(e) => updateQuestion(catIndex, qIndex, 'answer', e.target.value)}
-                              className="min-h-[72px] w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-emerald-300/50"
-                              placeholder="Правильный ответ"
-                            />
-                            <label className="mt-3 mb-2 block text-xs text-green-100/70">Картинка (ссылка)</label>
-                            <div className="flex gap-2">
-                              <input
-                                value={q.image}
-                                onChange={(e) => updateQuestion(catIndex, qIndex, 'image', e.target.value)}
-                                className="w-full rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-sm text-white outline-none focus:border-emerald-300/50"
-                                placeholder="https://..."
-                              />
-                              <label className="cursor-pointer rounded-2xl bg-emerald-400/15 p-3 text-emerald-200 hover:bg-emerald-400/25 transition" title="Вставить картинку">
-                                <ImagePlus className="h-4 w-4" />
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="hidden"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-                                    const reader = new FileReader();
-                                    reader.onload = () => updateQuestion(catIndex, qIndex, 'image', String(reader.result || ''));
-                                    reader.readAsDataURL(file);
-                                  }}
-                                />
-                              </label>
-                            </div>
-                            {q.image ? (
-                              <img
-                                src={q.image}
-                                alt="preview"
-                                className="mt-3 h-28 w-full rounded-2xl object-cover ring-1 ring-white/10"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-5">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-semibold">Игровая сетка</h2>
-                  <p className="text-sm text-green-100/70">В игре нажимайте на ячейку, чтобы открыть вопрос на весь экран.</p>
-                </div>
-                <div className="rounded-2xl bg-emerald-400/15 px-3 py-2 text-sm text-emerald-100">
-                  Сейчас ходит: <span className="font-semibold">{currentTeam?.name || '—'}</span>
-                </div>
-              </div>
-
-              <div className="overflow-hidden rounded-[2rem] border border-white/10 bg-black/20">
-                <div
-                  className="grid gap-px bg-white/5"
-                  style={{ gridTemplateColumns: `repeat(${state.categories.length || 1}, minmax(180px, 1fr))` }}
-                >
-                  {state.categories.map((cat, catIndex) => (
-                    <div key={cat.id} className="bg-emerald-950/70 p-3 text-center font-semibold text-green-50">
-                      <div className="flex items-center justify-center gap-2 text-sm md:text-base">
-                        <FlaskConical className="h-4 w-4 text-emerald-300" />
-                        {cat.name || `Категория ${catIndex + 1}`}
-                      </div>
-                    </div>
-                  ))}
-
-                  {Array.from({ length: qCount }, (_, qIndex) =>
-                    state.categories.map((cat, catIndex) => {
-                      const q = cat.questions[qIndex] || createEmptyQuestion();
-                      const resolvedClass = q.resolved
-                        ? q.result === 'correct'
-                          ? 'bg-emerald-500/75 text-emerald-950'
-                          : 'bg-rose-500/75 text-rose-50'
-                        : 'bg-gradient-to-br from-emerald-800 to-emerald-950 hover:from-emerald-700 hover:to-emerald-900 text-green-50';
-
-                      return (
-                        <button
-                          key={`${cat.id}-${qIndex}`}
-                          onClick={() => openCell(catIndex, qIndex)}
-                          disabled={q.resolved}
-                          className={`min-h-[96px] p-4 text-center transition-all duration-300 disabled:cursor-default disabled:opacity-95 ${resolvedClass}`}
-                        >
-                          <div className="flex h-full flex-col items-center justify-center gap-1 rounded-2xl border border-white/10 bg-black/10 p-2">
-                            <div className="text-xl font-extrabold md:text-2xl">
-                              {q.resolved ? q.teamName || 'Закрыто' : questionValues[qIndex] ?? (qIndex + 1) * 100}
-                            </div>
-                            <div className="text-xs opacity-90">
-                              {q.resolved ? (q.result === 'correct' ? 'Верно' : 'Неверно') : 'Открыть'}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
+            <div class="toolbar">
+              <button class="btn small primary" id="addCategoryBtn">+ Категория</button>
+              <button class="btn small ghost" id="addColumnBtn">+ Столбец</button>
+              <button class="btn small ghost" id="removeColumnBtn">- Столбец</button>
             </div>
-          </section>
-
-          <aside className="space-y-5">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-5">
-              <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-emerald-300" />
-                <h2 className="text-lg font-semibold">Счёт и управление</h2>
-              </div>
-              <div className="mt-4 space-y-3">
-                {state.teams
-                  .slice()
-                  .sort((a, b) => b.score - a.score)
-                  .map((team, index) => (
-                    <div key={team.id} className="rounded-2xl border border-white/10 bg-black/15 p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-white">{index + 1}. {team.name}</div>
-                          <div className="text-xs text-green-100/60">Ручное редактирование счёта</div>
-                        </div>
-                        <div className="rounded-xl bg-emerald-400/15 px-3 py-2 text-sm font-bold text-emerald-200">
-                          {team.score}
-                        </div>
-                      </div>
-                      <div className="mt-3 grid grid-cols-3 gap-2">
-                        {[100, 300, 500].map((delta) => (
-                          <button
-                            key={delta}
-                            onClick={() =>
-                              setState((prev) => ({
-                                ...prev,
-                                teams: prev.teams.map((t) =>
-                                  t.id === team.id ? { ...t, score: t.score + delta } : t
-                                ),
-                              }))
-                            }
-                            className="rounded-xl bg-emerald-400/15 px-3 py-2 text-xs hover:bg-emerald-400/25 transition"
-                          >
-                            +{delta}
-                          </button>
-                        ))}
-                        {[100, 300, 500].map((delta) => (
-                          <button
-                            key={`neg-${delta}`}
-                            onClick={() =>
-                              setState((prev) => ({
-                                ...prev,
-                                teams: prev.teams.map((t) =>
-                                  t.id === team.id ? { ...t, score: t.score - delta } : t
-                                ),
-                              }))
-                            }
-                            className="rounded-xl bg-white/5 px-3 py-2 text-xs hover:bg-white/10 transition"
-                          >
-                            -{delta}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-5">
-              <h2 className="text-lg font-semibold">Как это работает</h2>
-              <div className="mt-3 space-y-3 text-sm text-green-100/75">
-                <p>1. В редакторе заполните категории, вопросы, ответы и картинки.</p>
-                <p>2. Переключитесь в режим игры и откройте вопрос.</p>
-                <p>3. Таймер на 30 секунд скрывает вопрос после окончания.</p>
-                <p>4. Нажмите «Показать ответ», затем отметьте результат.</p>
-                <p>5. После закрытия ячейка станет зелёной или красной с именем команды.</p>
-              </div>
-            </div>
-          </aside>
+          </div>
+          <div id="editorContainer"></div>
         </div>
-      </main>
 
-      <AnimatePresence>
-        {state.modalOpen && state.selectedCell && openedCell && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md"
-          >
-            <motion.div
-              initial={{ scale: 0.92, y: 24, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.96, y: 10, opacity: 0 }}
-              transition={{ type: 'spring', stiffness: 220, damping: 22 }}
-              className="relative max-h-[92vh] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-white/10 bg-gradient-to-br from-emerald-950 via-green-950 to-slate-950 shadow-2xl shadow-black/40"
-            >
-              <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.25em] text-emerald-200/80">
-                    {openedCell.categoryName || 'Категория'} · {POINTS[state.selectedCell.qIndex] || (state.selectedCell.qIndex + 1) * 100} баллов
-                  </div>
-                  <div className="mt-1 text-sm text-green-100/70">
-                    Ход команды: <span className="font-semibold text-white">{currentTeam?.name}</span>
-                  </div>
-                </div>
-                <button onClick={closeModal} className="rounded-2xl bg-white/5 p-3 hover:bg-white/10 transition">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+        <div class="panel pad" style="margin-top:18px">
+          <div class="section-title">
+            <div>
+              <h2>Игровая сетка</h2>
+              <p>Нажми на ячейку — вопрос откроется во весь экран.</p>
+            </div>
+            <div class="badge">Сохранение локально</div>
+          </div>
+          <div class="grid-wrap">
+            <div class="game-grid" id="gameGrid"></div>
+          </div>
+        </div>
+      </section>
 
-              <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
-                <div className="relative border-b border-white/10 lg:border-b-0 lg:border-r lg:border-white/10 p-5 md:p-6">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 rounded-full bg-white/5 px-4 py-2 text-sm">
-                      <TimerReset className="h-4 w-4 text-emerald-300" />
-                      <span className={state.remaining <= 10 ? 'text-amber-200' : 'text-green-50'}>
-                        {state.remaining} сек.
-                      </span>
-                    </div>
-                    <div className="rounded-full bg-emerald-400/15 px-4 py-2 text-sm text-emerald-100">
-                      {state.timerRunning ? 'Таймер идёт' : 'Таймер остановлен'}
-                    </div>
-                  </div>
+      <aside class="side">
+        <div class="panel pad">
+          <div class="section-title">
+            <div>
+              <h2>Как играть</h2>
+              <p>Короткая подсказка.</p>
+            </div>
+          </div>
+          <div class="info-list">
+            <p>1. В редакторе заполни категорию, вопрос, ответ и картинку.</p>
+            <p>2. Переключись в режим игры и нажми на ячейку.</p>
+            <p>3. Таймер 30 секунд скрывает вопрос после истечения времени.</p>
+            <p>4. Нажми «Показать ответ», затем отметь результат.</p>
+            <p>5. Ячейка окрашивается зелёным или красным с именем команды.</p>
+          </div>
+        </div>
 
-                  <div className="mt-5 rounded-[1.75rem] border border-white/10 bg-black/20 p-5 md:p-6 min-h-[320px] flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-emerald-200/90">
-                        <Microscope className="h-4 w-4" />
-                        Вопрос
-                      </div>
-                      <AnimatePresence mode="wait">
-                        {state.remaining > 0 ? (
-                          <motion.div
-                            key="question-visible"
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -12 }}
-                            className="mt-4 text-2xl font-semibold leading-snug text-white md:text-4xl"
-                          >
-                            {openedCell.question || 'Добавьте текст вопроса в редакторе.'}
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="question-hidden"
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="mt-6 rounded-[1.5rem] border border-amber-400/20 bg-amber-400/10 p-5 text-lg text-amber-100"
-                          >
-                            Время вышло. Текст вопроса скрыт.
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    {openedCell.image ? (
-                      <div className="mt-6 overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5">
-                        <img
-                          src={openedCell.image}
-                          alt="question"
-                          className="h-56 w-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="p-5 md:p-6">
-                  <div className="rounded-[1.75rem] border border-white/10 bg-black/20 p-5">
-                    <div className="flex items-center gap-2 text-sm text-green-100/70">
-                      <Edit3 className="h-4 w-4 text-emerald-300" />
-                      Управление ответом
-                    </div>
-
-                    <div className="mt-4 space-y-3">
-                      <button
-                        onClick={() => setState((prev) => ({ ...prev, showAnswer: true, timerRunning: false }))}
-                        className="w-full rounded-2xl bg-emerald-400 px-4 py-3 text-base font-semibold text-emerald-950 hover:bg-emerald-300 transition"
-                      >
-                        Показать ответ
-                      </button>
-
-                      <AnimatePresence>
-                        {state.showAnswer && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 8 }}
-                            className="rounded-2xl border border-white/10 bg-white/5 p-4"
-                          >
-                            <div className="text-xs uppercase tracking-[0.2em] text-emerald-200/70">Правильный ответ</div>
-                            <div className="mt-2 text-lg font-semibold text-white">
-                              {openedCell.answer || 'Добавьте ответ в редакторе.'}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
-                      <div className="grid grid-cols-2 gap-3 pt-2">
-                        <button
-                          onClick={() => finishQuestion(true)}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-4 py-3 font-semibold text-white hover:bg-emerald-400 transition"
-                        >
-                          <CheckCircle2 className="h-5 w-5" />
-                          Верно (+баллы)
-                        </button>
-                        <button
-                          onClick={() => finishQuestion(false)}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-500 px-4 py-3 font-semibold text-white hover:bg-rose-400 transition"
-                        >
-                          <XCircle className="h-5 w-5" />
-                          Неверно (0)
-                        </button>
-                      </div>
-
-                      <div className="mt-4 rounded-2xl border border-white/10 bg-black/20 p-4 text-sm text-green-100/75">
-                        После закрытия вопрос автоматически перейдёт к следующей команде.
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <footer className="relative z-10 mx-auto max-w-7xl px-4 pb-6 pt-2 text-center text-xs text-green-100/45 md:px-6">
-        Сохранение работает локально в браузере через localStorage.
-      </footer>
+        <div class="panel pad">
+          <div class="section-title">
+            <div>
+              <h2>Быстрые действия</h2>
+              <p>Удобно для ведения игры.</p>
+            </div>
+          </div>
+          <div class="toolbar" style="gap:8px">
+            <button class="btn small ghost" id="saveBtn">Сохранить</button>
+            <button class="btn small ghost" id="importBtn">Импорт JSON</button>
+            <button class="btn small ghost" id="exportBtn">Экспорт JSON</button>
+          </div>
+          <input type="file" id="importFile" accept="application/json" hidden />
+          <textarea id="jsonBox" style="margin-top:10px;display:none" placeholder="JSON..."></textarea>
+        </div>
+      </aside>
     </div>
-  );
-}
+
+    <div class="foot">Если хочешь, этот файл можно назвать <b>index.html</b> и просто загрузить в корень репозитория.</div>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalHeading">
+      <div class="modal-head">
+        <div class="modal-title" id="modalHeading">
+          <div id="modalMeta">Категория · 100 баллов</div>
+          <small>Ходит: <span id="modalTeamName">—</span></small>
+        </div>
+        <button class="btn small ghost" id="closeModalBtn">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-left">
+          <div class="question-box">
+            <div>
+              <div class="timer-pill">⏳ <span id="timerText">30 сек.</span></div>
+              <div id="questionArea">
+                <div class="question-text" id="questionText">Вопрос</div>
+              </div>
+            </div>
+            <div id="imageArea"></div>
+          </div>
+        </div>
+        <div class="modal-right">
+          <div class="answer-box">
+            <h3>Управление ответом</h3>
+            <button class="btn primary" id="showAnswerBtn" style="width:100%">Показать ответ</button>
+            <div id="answerArea" style="display:none;margin-top:12px">
+              <div class="pill">Правильный ответ</div>
+              <div class="answer-text" id="answerText" style="margin-top:10px"></div>
+            </div>
+            <div class="answer-actions">
+              <button class="btn primary" id="correctBtn">Верно (+баллы)</button>
+              <button class="btn danger" id="wrongBtn">Неверно (0)</button>
+            </div>
+            <div style="margin-top:12px;color:var(--muted);font-size:13px;line-height:1.45">
+              После закрытия вопроса ход автоматически переходит к следующей команде.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const STORAGE_KEY = 'biology-jeopardy-html-v1';
+      const POINTS = [100,200,300,400,500];
+      const DEFAULT_CATS = 5;
+      const DEFAULT_TEAMS = 2;
+      const $ = (id) => document.getElementById(id);
+      const deepClone = (v) => JSON.parse(JSON.stringify(v));
+      const uid = () => Math.random().toString(36).slice(2,10);
+      const clamp = (n,min,max) => Math.max(min, Math.min(max, n));
+
+      function newQuestion(){
+        return { id: uid(), question:'', answer:'', image:'', resolved:false, result:null, teamName:'', pointsAwarded:0 };
+      }
+      function newCategory(i){
+        return { id: uid(), name:`Категория ${i+1}`, questions: POINTS.map(() => newQuestion()) };
+      }
+      function defaultState(){
+        return {
+          mode:'editor',
+          teams: Array.from({length:DEFAULT_TEAMS}, (_,i)=>({ id:uid(), name:`Команда ${i+1}`, score:0 })),
+          categories: Array.from({length:DEFAULT_CATS}, (_,i)=>newCategory(i)),
+          currentTurn:0,
+          modalOpen:false,
+          selected:null,
+          remaining:30,
+          timerId:null,
+          showAnswer:false
+        };
+      }
+      function loadState(){
+        try{
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if(!raw) return defaultState();
+          const parsed = JSON.parse(raw);
+          const base = defaultState();
+          return {
+            ...base,
+            ...parsed,
+            mode: parsed.mode === 'game' ? 'game' : 'editor',
+            teams: Array.isArray(parsed.teams) && parsed.teams.length ? parsed.teams : base.teams,
+            categories: Array.isArray(parsed.categories) && parsed.categories.length ? parsed.categories : base.categories,
+          };
+        }catch(e){
+          return defaultState();
+        }
+      }
+
+      let state = loadState();
+      let timer = null;
+
+      function save(){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+      function renderAll(){
+        save();
+        renderHeader();
+        renderTeams();
+        renderEditor();
+        renderGameGrid();
+        renderModeVisibility();
+      }
+      function renderHeader(){
+        const currentTeam = state.teams[state.currentTurn % state.teams.length];
+        $('turnBadge').textContent = `Ход: ${currentTeam ? currentTeam.name : '—'}`;
+        $('teamCountRange').value = state.teams.length;
+        $('teamCountLabel').textContent = state.teams.length;
+      }
+      function renderModeVisibility(){
+        $('editorPanel').style.display = state.mode === 'editor' ? 'block' : 'none';
+      }
+      function renderTeams(){
+        const wrap = $('teamsGrid');
+        wrap.innerHTML = '';
+        state.teams.forEach((team, idx) => {
+          const active = idx === (state.currentTurn % state.teams.length);
+          const card = document.createElement('div');
+          card.className = `team-card ${active ? 'active':''}`;
+          card.innerHTML = `
+            <div class="team-head">
+              <input class="team-name" value="${escapeHtml(team.name)}" placeholder="Команда ${idx+1}" />
+              <div class="score">${team.score}</div>
+            </div>
+            <div class="score-controls">
+              <button class="btn small" data-action="minus100">-100</button>
+              <button class="btn small" data-action="plus100">+100</button>
+              <button class="btn small" data-action="setturn">Ход</button>
+              <button class="btn small" data-action="reset">0</button>
+            </div>
+          `;
+          const input = card.querySelector('input');
+          input.addEventListener('input', e => { team.name = e.target.value; renderAll(); });
+          card.querySelector('[data-action="minus100"]').onclick = () => { team.score -= 100; renderAll(); };
+          card.querySelector('[data-action="plus100"]').onclick = () => { team.score += 100; renderAll(); };
+          card.querySelector('[data-action="setturn"]').onclick = () => { state.currentTurn = idx; renderAll(); };
+          card.querySelector('[data-action="reset"]').onclick = () => { team.score = 0; renderAll(); };
+          wrap.appendChild(card);
+        });
+      }
+      function renderEditor(){
+        const container = $('editorContainer');
+        container.innerHTML = '';
+        state.categories.forEach((cat, catIndex) => {
+          const box = document.createElement('div');
+          box.className = 'editor-cat';
+          const questionsHtml = cat.questions.map((q, qIndex) => `
+            <div class="qcard">
+              <div class="row">
+                <span class="pill">${POINTS[qIndex] || ((qIndex+1)*100)} баллов</span>
+                <span style="font-size:12px;color:var(--muted)">${q.id}</span>
+              </div>
+              <label style="font-size:12px;color:var(--muted)">Вопрос</label>
+              <textarea data-field="question">${escapeHtml(q.question)}</textarea>
+              <label style="font-size:12px;color:var(--muted);margin-top:8px;display:block">Ответ</label>
+              <textarea data-field="answer">${escapeHtml(q.answer)}</textarea>
+              <label style="font-size:12px;color:var(--muted);margin-top:8px;display:block">Картинка (ссылка)</label>
+              <input type="text" data-field="image" value="${escapeHtml(q.image)}" placeholder="https://..." />
+              ${q.image ? `<div class="img-preview"><img src="${escapeAttr(q.image)}" alt="preview"></div>` : ''}
+            </div>
+          `).join('');
+          box.innerHTML = `
+            <div class="editor-cat-top">
+              <input class="cat-name" value="${escapeHtml(cat.name)}" placeholder="Название категории" />
+              <button class="btn small danger" data-remove-cat>Удалить категорию</button>
+            </div>
+            <div class="editor-question">${questionsHtml}</div>
+          `;
+          const catName = box.querySelector('.cat-name');
+          catName.addEventListener('input', e => { cat.name = e.target.value; renderAll(); });
+          box.querySelector('[data-remove-cat]').onclick = () => {
+            if(state.categories.length <= 1) return alert('Нужна хотя бы одна категория.');
+            state.categories.splice(catIndex, 1);
+            renderAll();
+          };
+          box.querySelectorAll('.qcard').forEach((qcard, qIndex) => {
+            const q = cat.questions[qIndex];
+            const areas = qcard.querySelectorAll('textarea');
+            const imageInput = qcard.querySelector('input[data-field="image"]');
+            areas[0].addEventListener('input', e => { q.question = e.target.value; save(); });
+            areas[1].addEventListener('input', e => { q.answer = e.target.value; save(); });
+            imageInput.addEventListener('input', e => { q.image = e.target.value; renderAll(); });
+            // file drop/paste support via context note impossible in simple HTML without extra picker
+            qcard.insertAdjacentHTML('beforeend', `<div style="margin-top:8px;color:var(--muted);font-size:12px">Можно вставить прямую ссылку на картинку или dataURL.</div>`);
+          });
+          container.appendChild(box);
+        });
+      }
+      function renderGameGrid(){
+        const grid = $('gameGrid');
+        const cols = Math.max(1, state.categories.length);
+        const qCount = Math.max(1, state.categories[0]?.questions.length || POINTS.length);
+        grid.style.gridTemplateColumns = `repeat(${cols}, minmax(180px, 1fr))`;
+        grid.innerHTML = '';
+
+        // category row
+        state.categories.forEach((cat) => {
+          const d = document.createElement('div');
+          d.className = 'cell cat';
+          d.textContent = cat.name || 'Категория';
+          grid.appendChild(d);
+        });
+
+        // questions by rows
+        for(let qi=0; qi<qCount; qi++){
+          state.categories.forEach((cat, ci) => {
+            const q = cat.questions[qi] || newQuestion();
+            const btn = document.createElement('button');
+            btn.className = 'cell q' + (q.resolved ? ` done ${q.result || ''}` : '');
+            btn.disabled = !!q.resolved;
+            btn.innerHTML = `<div class="cell-inner"><div class="cell-value">${q.resolved ? (q.teamName || 'Закрыто') : (POINTS[qi] || (qi+1)*100)}</div><div class="cell-sub">${q.resolved ? (q.result === 'correct' ? 'Верно' : 'Неверно') : 'Открыть'}</div></div>`;
+            btn.onclick = () => openQuestion(ci, qi);
+            grid.appendChild(btn);
+          });
+        }
+      }
+
+      function openQuestion(catIndex, qIndex){
+        const q = state.categories[catIndex].questions[qIndex];
+        if(q.resolved) return;
+        clearInterval(timer);
+        state.selected = { catIndex, qIndex };
+        state.modalOpen = true;
+        state.showAnswer = false;
+        state.remaining = 30;
+        $('modalBackdrop').classList.add('open');
+        updateModalContent();
+        timer = setInterval(() => {
+          if(!state.modalOpen) { clearInterval(timer); return; }
+          state.remaining -= 1;
+          if(state.remaining <= 0){
+            state.remaining = 0;
+            clearInterval(timer);
+            state.showAnswer = false;
+            updateModalContent();
+            save();
+            return;
+          }
+          updateModalContent();
+        }, 1000);
+        save();
+      }
+
+      function updateModalContent(){
+        if(!state.selected) return;
+        const q = state.categories[state.selected.catIndex].questions[state.selected.qIndex];
+        const team = state.teams[state.currentTurn % state.teams.length];
+        $('modalMeta').textContent = `${state.categories[state.selected.catIndex].name} · ${POINTS[state.selected.qIndex] || (state.selected.qIndex+1)*100} баллов`;
+        $('modalTeamName').textContent = team ? team.name : '—';
+        $('timerText').textContent = `${state.remaining} сек.`;
+        $('questionArea').innerHTML = state.remaining > 0
+          ? `<div class="question-text">${escapeHtml(q.question || 'Добавьте текст вопроса в редакторе.')}</div>`
+          : `<div class="hidden-note">Время вышло. Текст вопроса скрыт.</div>`;
+        $('imageArea').innerHTML = q.image ? `<img class="preview-img" src="${escapeAttr(q.image)}" alt="question">` : '';
+        $('answerText').textContent = q.answer || 'Добавьте ответ в редакторе.';
+        $('answerArea').style.display = state.showAnswer ? 'block' : 'none';
+      }
+
+      function closeModal(){
+        clearInterval(timer);
+        state.modalOpen = false;
+        state.selected = null;
+        state.showAnswer = false;
+        $('modalBackdrop').classList.remove('open');
+        renderAll();
+      }
+
+      function finishQuestion(correct){
+        if(!state.selected) return;
+        const { catIndex, qIndex } = state.selected;
+        const q = state.categories[catIndex].questions[qIndex];
+        const team = state.teams[state.currentTurn % state.teams.length];
+        const points = POINTS[qIndex] || (qIndex + 1) * 100;
+        q.resolved = true;
+        q.result = correct ? 'correct' : 'wrong';
+        q.teamName = team.name;
+        q.pointsAwarded = correct ? points : 0;
+        if(correct) team.score += points;
+        state.currentTurn = (state.currentTurn + 1) % state.teams.length;
+        closeModal();
+        renderAll();
+      }
+
+      function setTeamsCount(n){
+        n = clamp(Number(n || 2), 2, 10);
+        if(state.teams.length < n){
+          for(let i=state.teams.length;i<n;i++) state.teams.push({id:uid(), name:`Команда ${i+1}`, score:0});
+        } else if(state.teams.length > n){
+          state.teams.length = n;
+        }
+        state.currentTurn = state.currentTurn % state.teams.length;
+        renderAll();
+      }
+
+      function addCategory(){
+        state.categories.push(newCategory(state.categories.length));
+        renderAll();
+      }
+      function addColumn(){
+        state.categories.forEach(cat => cat.questions.push(newQuestion()));
+        renderAll();
+      }
+      function removeColumn(){
+        if((state.categories[0]?.questions.length || 0) <= 1) return alert('Нужен хотя бы один столбец.');
+        state.categories.forEach(cat => cat.questions.pop());
+        renderAll();
+      }
+      function newGame(){
+        state.mode = 'game';
+        state.currentTurn = 0;
+        state.teams.forEach(t => t.score = 0);
+        state.categories.forEach(cat => cat.questions.forEach(q => { q.resolved=false; q.result=null; q.teamName=''; q.pointsAwarded=0; }));
+        renderAll();
+      }
+      function resetAll(){
+        if(!confirm('Сбросить всю доску и команды?')) return;
+        state = defaultState();
+        renderAll();
+      }
+
+      function importJsonFile(file){
+        const reader = new FileReader();
+        reader.onload = () => {
+          try{
+            const parsed = JSON.parse(String(reader.result || '{}'));
+            if(!parsed || typeof parsed !== 'object') throw new Error('Invalid JSON');
+            state = { ...defaultState(), ...parsed };
+            renderAll();
+          }catch(e){
+            alert('Не удалось импортировать JSON.');
+          }
+        };
+        reader.readAsText(file);
+      }
+      function exportJson(){
+        const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'biology-jeopardy.json';
+        a.click();
+        setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+      }
+
+      function escapeHtml(str){
+        return String(str ?? '')
+          .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+      }
+      function escapeAttr(str){ return escapeHtml(str).replace(/`/g,'&#96;'); }
+
+      // Events
+      $('modeEditor').onclick = () => { state.mode = 'editor'; renderAll(); };
+      $('modeGame').onclick = () => { state.mode = 'game'; renderAll(); };
+      $('newGameBtn').onclick = newGame;
+      $('resetBtn').onclick = resetAll;
+      $('addCategoryBtn').onclick = addCategory;
+      $('addColumnBtn').onclick = addColumn;
+      $('removeColumnBtn').onclick = removeColumn;
+      $('teamCountRange').oninput = (e) => setTeamsCount(e.target.value);
+      $('saveBtn').onclick = () => { save(); alert('Сохранено в браузере.'); };
+      $('exportBtn').onclick = exportJson;
+      $('importBtn').onclick = () => $('importFile').click();
+      $('importFile').onchange = (e) => { const file = e.target.files?.[0]; if(file) importJsonFile(file); e.target.value=''; };
+      $('closeModalBtn').onclick = closeModal;
+      $('modalBackdrop').addEventListener('click', (e) => { if(e.target.id === 'modalBackdrop') closeModal(); });
+      $('showAnswerBtn').onclick = () => { state.showAnswer = true; $('answerArea').style.display = 'block'; save(); };
+      $('correctBtn').onclick = () => finishQuestion(true);
+      $('wrongBtn').onclick = () => finishQuestion(false);
+
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        if(e.key === 'Escape' && state.modalOpen) closeModal();
+        if(state.modalOpen && e.key === 'Enter') {
+          if(!state.showAnswer) { state.showAnswer = true; $('answerArea').style.display = 'block'; save(); }
+        }
+      });
+
+      // initial render
+      renderAll();
+    })();
+  </script>
+</body>
+</html>
